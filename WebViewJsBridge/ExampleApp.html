@@ -1,0 +1,46 @@
+<!doctype html>
+<html><head>
+	<style type='text/css'>
+		html { font-family:Helvetica; color:#222; }
+		h1 { color:steelblue; font-size:24px; margin-top:24px; }
+		button { margin:0 3px 10px; font-size:12px; }
+		.logLine { border-bottom:1px solid #ccc; padding:4px 2px; font-family:courier; font-size:11px; }
+	</style>
+</head><body>
+	<h1>WebViewJavascriptBridge Demo</h1>
+    <div id='buttons'></div> <div id='log'></div>
+	<script>
+	window.onerror = function(err) {
+		log('window.onerror: ' + err)
+	}
+    
+    function log(message, data) {
+        var log = document.getElementById('log')
+        var el = document.createElement('div')
+        el.className = 'logLine'
+        el.innerHTML = message + (data ? ':<br/>' + JSON.stringify(data) : '')
+        if (log.children.length) { log.insertBefore(el, log.children[0]) }
+        else { log.appendChild(el) }
+    }
+	
+	var button = document.getElementById('buttons').appendChild(document.createElement('button'))
+    button.innerHTML = 'Send message to ObjC'
+    button.onclick = function(e) {
+        e.preventDefault();
+        var data = 'Hello from JS button';
+        log('JS sending message', data);
+        window.external.test1(data, 'haha');
+    }
+    
+    document.body.appendChild(document.createElement('br'))
+    
+    var callbackButton = document.getElementById('buttons').appendChild(document.createElement('button'))
+    callbackButton.innerHTML = 'Fire testObjcCallback'
+    callbackButton.onclick = function(e) {
+        e.preventDefault()
+        log('JS calling handler "testObjcCallback"');
+        window.external.test2('test');
+    }
+    
+	</script>
+</body></html>
