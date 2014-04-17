@@ -11,7 +11,7 @@
 		doc.documentElement.appendChild(messagingIframe);
 	}
 	window[bridge] = {};
-    var methods = ["test1", "test2"];
+    var methods = [%@];
     for (var i=0;i<methods.length;i++){
         var method = methods[i];
         var code = "(window[bridge])[method] = function " + method + "() {messagingIframe.src = CUSTOM_PROTOCOL_SCHEME + ':' + arguments.callee.name + ':' + encodeURIComponent(JSON.stringify(arguments));}";

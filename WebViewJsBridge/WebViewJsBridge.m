@@ -7,6 +7,7 @@
 //
 
 #import "WebViewJsBridge.h"
+#import <objc/runtime.h>
 
 @interface WebViewJsBridge ()
 
@@ -53,12 +54,26 @@
 
 - (void)webViewDidFinishLoad:(UIWebView *)webView {
     if (webView != _webView) { return; }
-    //js是否注入成功
+    //is js insert
     if (![[webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:@"typeof window.%@ == 'object'", kBridgeName]] isEqualToString:@"true"]) {
+        //get class method dynamically
+        unsigned int methodCount = 0;
+        Method *methods = class_copyMethodList([self class], &methodCount);
+        NSMutableString *methodList = [NSMutableString string];
+        for (int i=0; i<methodCount; i++) {
+            NSString *methodName = [NSString stringWithCString:sel_getName(method_getName(methods[i])) encoding:NSUTF8StringEncoding];
+            [methodList appendString:@"\""];
+            [methodList appendString:[methodName stringByReplacingOccurrencesOfString:@":" withString:@""]];
+            [methodList appendString:@"\","];
+        }
+        if (methodList.length>0) {
+            [methodList deleteCharactersInRange:NSMakeRange(methodList.length-1, 1)];
+        }
+        
         NSBundle *bundle = _resourceBundle ? _resourceBundle : [NSBundle mainBundle];
         NSString *filePath = [bundle pathForResource:@"WebViewJsBridge" ofType:@"js"];
         NSString *js = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
-        [webView stringByEvaluatingJavaScriptFromString:js];
+        [webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:js, methodList]];
     }
 
     __strong typeof(_webViewDelegate) strongDelegate = _webViewDelegate;
@@ -90,15 +105,14 @@
                                   stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
         NSData *argsData = [argsAsString dataUsingEncoding:NSUTF8StringEncoding];
         NSDictionary *argsDic = (NSDictionary *)[NSJSONSerialization JSONObjectWithData:argsData options:kNilOptions error:NULL];
-        //将js的数组转换成objc的数组
+        //convert js array to objc array
         NSMutableArray *args = [NSMutableArray array];
         for (int i=0; i<[argsDic count]; i++) {
             [args addObject:[argsDic objectForKey:[NSString stringWithFormat:@"%d", i]]];
         }
-        //调用oc方法，忽略警告
+        //ignore warning
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         SEL selector = NSSelectorFromString([function stringByAppendingString:@":"]);
-        NSLog(@"sel:%@, args:%@", function, args);
         if ([self respondsToSelector:selector]) {
             [self performSelector:selector withObject:args];
         }
