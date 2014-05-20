@@ -36,11 +36,6 @@
     _webViewDelegate = webViewDelegate;
     _webView.delegate = self;
     _resourceBundle = bundle;
-    
-//    NSString *filePath = [[NSBundle mainBundle] pathForResource:@"WebViewJsBridge" ofType:@"js"];
-//    NSString *js = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
-//    NSString *result = [webView stringByEvaluatingJavaScriptFromString:js];
-//    NSLog(@"%@", result);
 }
 
 - (void)dealloc {
@@ -112,7 +107,7 @@
         }
         //ignore warning
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-        SEL selector = NSSelectorFromString([function stringByAppendingString:@":"]);
+        SEL selector = NSSelectorFromString([args count]>0?[function stringByAppendingString:@":"]:function);
         if ([self respondsToSelector:selector]) {
             [self performSelector:selector withObject:args];
         }
