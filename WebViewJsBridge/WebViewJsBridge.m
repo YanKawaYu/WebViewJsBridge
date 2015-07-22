@@ -40,7 +40,6 @@
 
 - (void)dealloc {
     _webView.delegate = nil;
-    
     _webView = nil;
     _webViewDelegate = nil;
 }
@@ -57,6 +56,10 @@
         NSMutableString *methodList = [NSMutableString string];
         for (int i=0; i<methodCount; i++) {
             NSString *methodName = [NSString stringWithCString:sel_getName(method_getName(methods[i])) encoding:NSUTF8StringEncoding];
+            //防止隐藏的系统方法名包含“.”导致js报错
+            if ([methodName rangeOfString:@"."].location!=NSNotFound) {
+                continue;
+            }
             [methodList appendString:@"\""];
             [methodList appendString:[methodName stringByReplacingOccurrencesOfString:@":" withString:@""]];
             [methodList appendString:@"\","];
@@ -64,13 +67,13 @@
         if (methodList.length>0) {
             [methodList deleteCharactersInRange:NSMakeRange(methodList.length-1, 1)];
         }
-        
+        free(methods);
         NSBundle *bundle = _resourceBundle ? _resourceBundle : [NSBundle mainBundle];
         NSString *filePath = [bundle pathForResource:@"WebViewJsBridge" ofType:@"js"];
         NSString *js = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
         [webView stringByEvaluatingJavaScriptFromString:[NSString stringWithFormat:js, methodList]];
     }
-
+    
     __strong typeof(_webViewDelegate) strongDelegate = _webViewDelegate;
     if (strongDelegate && [strongDelegate respondsToSelector:@selector(webViewDidFinishLoad:)]) {
         [strongDelegate webViewDidFinishLoad:webView];
@@ -136,7 +139,6 @@
     if (obj) {
         js = [NSString stringWithFormat:@"%@.%@", obj, function];
     }
-    NSLog(@"excuteJS:%@", js);
     [self.webView stringByEvaluatingJavaScriptFromString:js];
 }
 
